@@ -2,8 +2,7 @@ package net.ansinn.ByteBarista.codecs;
 
 import java.nio.ByteBuffer;
 
-public record SafeCodec<T>() implements Codec<T> {
-
+public record FixedCodec<T extends Record>() implements Codec<T> {
     @Override
     public T decode(ByteBuffer buffer) {
         return null;

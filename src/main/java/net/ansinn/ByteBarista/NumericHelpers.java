@@ -5,7 +5,9 @@ import java.nio.ByteBuffer;
 /**
  * Simple set of methods to read numeric types not explicitly encoded within ByteBuffer.class
  */
-public class NumericHelpers {
+public final class NumericHelpers {
+
+    private NumericHelpers() {}
 
     public static long getUnsignedInt(ByteBuffer buffer) {
         var num = buffer.getInt();
