@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
-import static net.ansinn.ByteBarista.RecordDecoderBuilder.*;
+import static net.ansinn.ByteBarista.codegen.RecordCodecBuilder.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DecoderClassBuilderTest {
