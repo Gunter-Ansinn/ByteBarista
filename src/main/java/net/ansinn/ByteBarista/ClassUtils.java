@@ -108,8 +108,53 @@ public class ClassUtils {
         return false;
     }
 
+    /**
+     * Determines whether the given record class has a fixed size when serialized.
+     * <p>
+     * A record is considered fixed-size if all of its components are of known, constant-width types:
+     * primitive types, enums, or other fixed-size records. Arrays and reference types other than enums
+     * are treated as variable-sized and will cause this method to return {@code false}.
+     * </p>
+     *
+     * <p>
+     * This check is useful for deciding whether a record can be safely and efficiently serialized
+     * using a fixed-size codec without length headers or dynamic parsing logic.
+     * </p>
+     *
+     * @param recordClazz the record class to inspect
+     * @return {@code true} if all components are fixed-size; {@code false} otherwise
+     */
     public static <T extends Record> boolean isFixedSize(Class<T> recordClazz) {
+        // TODO: rewrite this including some form of caching so that it doesn't
+        //  sift through an entire line of pre-computed classes each time.
+        for (RecordComponent component : recordClazz.getRecordComponents()) {
+            Class<?> type = component.getType();
 
+            // primitives and enums are always fixed-size
+            if (type.isPrimitive() || type.isEnum()) {
+                continue;
+            }
+            // Strings are dynamic
+            if (type.equals(String.class)) {
+                return false;
+            }
+            // any array (primitive or object) is dynamic
+            if (type.isArray()) {
+                return false;
+            }
+            // nested records: only fixed if their components are
+            if (type.isRecord()) {
+                @SuppressWarnings("unchecked")
+                Class<? extends Record> nested = (Class<? extends Record>) type;
+                if (!isFixedSize(nested)) {
+                    return false;
+                }
+                continue;
+            }
+            // all other reference types are dynamic
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -142,7 +187,10 @@ public class ClassUtils {
 
                 case "boolean" -> throw new IllegalArgumentException("Type boolean is currently unsupported.");
                 case "void" -> throw new IllegalArgumentException("Type void is not permitted within record encoders and decoders.");
-                default -> throw new IllegalArgumentException("Unknown primitive: " + type);
+                default -> {
+                    // TODO add support for nested records with this
+                    throw new IllegalArgumentException("Unknown primitive: " + type);
+                }
             };
         } else return "L" + type.getName() + ";";
     }
