@@ -18,6 +18,8 @@ import java.lang.reflect.RecordComponent;
  */
 public final class DecoderUtils {
 
+    private DecoderUtils() {}
+
     /**
      * Emits the appropriate JVM bytecode instruction to load a value from a local
      * variable slot based on the type of the given record component.
