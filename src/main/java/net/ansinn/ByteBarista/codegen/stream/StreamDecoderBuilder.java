@@ -141,15 +141,29 @@ public final class StreamDecoderBuilder {
     }
 
     private static void emitReadFromLongStream(CodeBuilder builder) {
-        for (int shift : new int[] {56, 48, 40, 32, 24, 16, 8, 0}) {
+        builder
+                .aload(0)
+                .invokevirtual(INPUT_DESC, "read", INT_DESC)
+                .sipush(0xFF)
+                .iand()
+                .i2l()
+                .bipush(56)
+                .lshl(); // initialize value on the stack with MSB
+
+        for (int i = 1; i < 8; i++) {
+            int shift = 8 * (7 - i);
+
             builder
                     .aload(0)
                     .invokevirtual(INPUT_DESC, "read", INT_DESC)
                     .sipush(0xFF)
-                    .iand();
-            if (shift > 0) builder.bipush(shift).i2l().lshl();
-            else builder.i2l();
-            if (shift < 56) builder.lor();
+                    .iand()
+                    .i2l();
+
+            if (shift > 0)
+                builder.bipush(shift).lshl();
+
+            builder.lor();
         }
     }
 
