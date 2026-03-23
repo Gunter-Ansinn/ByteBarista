@@ -1,17 +1,21 @@
-package net.ansinn.ByteBarista.codegen;
+package net.ansinn.ByteBarista.codegen.buffer;
 
 import net.ansinn.ByteBarista.ClassUtils;
 import net.ansinn.ByteBarista.NumericHelpers;
 import net.ansinn.ByteBarista.annotations.UnsignedByte;
 import net.ansinn.ByteBarista.annotations.UnsignedInteger;
 import net.ansinn.ByteBarista.annotations.UnsignedShort;
+import net.ansinn.ByteBarista.codegen.RecordCodecBuilder;
 
 import java.lang.classfile.CodeBuilder;
+import java.lang.classfile.TypeKind;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.RecordComponent;
 import java.nio.ByteBuffer;
+
+import static net.ansinn.ByteBarista.codegen.CodegenConstants.*;
 
 /**
  * Utility class responsible for generating bytecode instructions that deserialize {@link Record} types from a {@link ByteBuffer}.
@@ -51,7 +55,7 @@ public final class BufferDecoderBuilder {
      * @param builder the {@link CodeBuilder} used to emit bytecode instructions
      * @param clazz   the record class whose constructor is being filled
      */
-    static void emitReadFunction(CodeBuilder builder, Class<? extends Record> clazz) {
+    public static void emitReadFunction(CodeBuilder builder, Class<? extends Record> clazz) {
 
         // Build signature for record parameters to be used with constructor invocation
         var components = clazz.getRecordComponents();
@@ -62,8 +66,20 @@ public final class BufferDecoderBuilder {
         // Iterate over every single record parameter emitting read functions for the bytebuffer
         // located in address 0 (since this method is static and not local)
         for (var component : components) {
+            var type = component.getType();
             builder.aload(0);
-            writeParserMethod(builder, component);
+            // Write instructions to load primitives
+            if (type.isPrimitive())
+                writePrimitiveParser(builder, component);
+
+            // Write instructions to load arrays and strings
+//            else if (type.isArray() || type.equals(String.class))
+//                writeDynamicParser(builder, component);
+
+            // Write instructions to load records and arrays of records
+            else
+                writeClassParser(builder, component);
+
             builder.istore(index++);
         }
 
@@ -99,60 +115,138 @@ public final class BufferDecoderBuilder {
      * {@link IllegalStateException}.
      * </p>
      *
-     * @param codeBuilder the {@link CodeBuilder} used to emit bytecode instructions
+     * @param builder the {@link CodeBuilder} used to emit bytecode instructions
      * @param component   the record component whose value will be read from the {@link ByteBuffer}
      * @throws IllegalStateException if an unsupported type or annotation combination is encountered
      */
-    private static void writeParserMethod(CodeBuilder codeBuilder, RecordComponent component) {
+    private static void writePrimitiveParser(CodeBuilder builder, RecordComponent component) {
         var componentType = component.getType();
 
         switch (componentType.getTypeName()) {
             case "long" -> {
                 if (component.isAnnotationPresent(UnsignedByte.class))
-                    codeBuilder.invokevirtual(CodegenConstants.HELPER_DESC, "getUnsignedByteAsLong", CodegenConstants.BUFFER_LONG_LOAD);
+                    builder.invokevirtual(HELPER_DESC, "getUnsignedByteAsLong", BUFFER_LONG_LOAD);
                 else if (component.isAnnotationPresent(UnsignedShort.class))
-                    codeBuilder.invokevirtual(CodegenConstants.HELPER_DESC, "getUnsignedShortAsLong", CodegenConstants.BUFFER_LONG_LOAD);
+                    builder.invokevirtual(HELPER_DESC, "getUnsignedShortAsLong", BUFFER_LONG_LOAD);
                 else if (component.isAnnotationPresent(UnsignedInteger.class))
-                    codeBuilder.invokevirtual(CodegenConstants.HELPER_DESC, "getUnsignedInt", CodegenConstants.BUFFER_LONG_LOAD);
+                    builder.invokevirtual(HELPER_DESC, "getUnsignedInt", BUFFER_LONG_LOAD);
                 else
-                    codeBuilder.invokevirtual(CodegenConstants.BUFFER_DESC, "getLong", MethodTypeDesc.ofDescriptor("()J"));
+                    builder.invokevirtual(BUFFER_DESC, "getLong", MethodTypeDesc.ofDescriptor("()J"));
             }
             case "int" -> {
                 if (component.isAnnotationPresent(UnsignedByte.class))
-                    codeBuilder.invokevirtual(CodegenConstants.HELPER_DESC, "getUnsignedByteAsInt", CodegenConstants.BUFFER_INT_LOAD);
+                    builder.invokevirtual(HELPER_DESC, "getUnsignedByteAsInt", BUFFER_INT_LOAD);
                 else if (component.isAnnotationPresent(UnsignedShort.class))
-                    codeBuilder.invokevirtual(CodegenConstants.HELPER_DESC, "getUnsignedShortAsInt", CodegenConstants.BUFFER_INT_LOAD);
+                    builder.invokevirtual(HELPER_DESC, "getUnsignedShortAsInt", BUFFER_INT_LOAD);
                 else if (component.isAnnotationPresent(UnsignedInteger.class))
                     throw new IllegalStateException("You can't load an unsigned integer as an integer.");
                 else
-                    codeBuilder
-                            .invokevirtual(CodegenConstants.BUFFER_DESC, "getInt", CodegenConstants.INT_DESC);
+                    builder
+                            .invokevirtual(BUFFER_DESC, "getInt", INT_DESC);
             }
             case "short" -> {
-                codeBuilder
-                        .invokevirtual(CodegenConstants.BUFFER_DESC, "getShort", CodegenConstants.SHORT_DESC);
+                builder
+                        .invokevirtual(BUFFER_DESC, "getShort", SHORT_DESC);
             }
             case "byte" -> {
-                codeBuilder
-                        .invokevirtual(CodegenConstants.BUFFER_DESC, "get", CodegenConstants.BYTE_DESC);
+                builder
+                        .invokevirtual(BUFFER_DESC, "get", BYTE_DESC);
             }
 
             case "double" -> {
-                codeBuilder
-                        .invokevirtual(CodegenConstants.BUFFER_DESC, "getDouble", MethodTypeDesc.ofDescriptor("()D"));
+                builder
+                        .invokevirtual(BUFFER_DESC, "getDouble", MethodTypeDesc.ofDescriptor("()D"));
             }
             case "float" -> {
-                codeBuilder
-                        .invokevirtual(CodegenConstants.BUFFER_DESC, "getFloat", MethodTypeDesc.ofDescriptor("()F"));
+                builder
+                        .invokevirtual(BUFFER_DESC, "getFloat", MethodTypeDesc.ofDescriptor("()F"));
             }
 
             case "char" -> {
-                codeBuilder
-                        .invokevirtual(CodegenConstants.BUFFER_DESC, "getChar", MethodTypeDesc.ofDescriptor("()C"));
+                builder
+                        .invokevirtual(BUFFER_DESC, "getChar", MethodTypeDesc.ofDescriptor("()C"));
             }
 
             default -> throw new IllegalStateException("Unexpected type: " + componentType.getTypeName());
         }
+    }
+
+    private static void writeDynamicParser(CodeBuilder builder, RecordComponent component) {
+        // Allocate slots for local variables related to array parsing
+        var lengthSlot = builder.allocateLocal(TypeKind.INT);
+        var arraySlot = builder.allocateLocal(TypeKind.REFERENCE);
+        var indexSlot = builder.allocateLocal(TypeKind.INT);
+
+        // Get length of array
+        builder.invokevirtual(BUFFER_DESC, "getInt", INT_DESC);
+        builder.istore(lengthSlot);
+
+        var type = component.getType();
+
+        // Check for byte array to decode
+        if(type.equals(byte[].class)) {
+            emitByteArrayRead(builder, lengthSlot, arraySlot);
+
+        } else if (type.equals(String.class)) {
+            emitByteArrayRead(builder, lengthSlot, arraySlot);
+            emitStringRead(builder, lengthSlot, arraySlot);
+
+        } else if (type.equals(String[].class)) {
+            emitStringArrayRead(builder, lengthSlot, arraySlot, indexSlot);
+
+        } else if (type.isArray() && type.getComponentType().isPrimitive()) {
+            emitPrimitiveArrayRead(builder, type.getComponentType(), lengthSlot, arraySlot, indexSlot);
+        }
+
+        // return array data
+        builder.aload(arraySlot);
+    }
+
+    private static void emitByteArrayRead(CodeBuilder builder, int lengthSlot, int arraySlot) {
+        // Create a new array of given length
+        builder.iload(lengthSlot);
+        builder.newarray(TypeKind.BYTE);
+        builder.astore(arraySlot);
+
+        // Copy bytes into new byte array
+        builder.aload(0);
+        builder.aload(arraySlot);
+        builder.invokevirtual(BUFFER_DESC, "get", MethodTypeDesc.ofDescriptor("([B)Ljava/nio/ByteBuffer;"));
+        builder.pop();
+    }
+
+    private static void emitStringRead(CodeBuilder builder, int lengthSlot, int arraySlot) {
+        // Create new string object to return
+        builder.aload(0);
+        builder.invokestatic(
+                ClassDesc.of("java.lang.String"),
+                "<init>",
+                MethodTypeDesc.ofDescriptor("([B)V")
+        );
+        builder.astore(arraySlot);
+    }
+
+    private static void emitStringArrayRead(CodeBuilder builder, int lengthSlot, int arraySlot, int indexSlot) {
+
+    }
+
+    private static void emitPrimitiveArrayRead(CodeBuilder builder, Class<?> componentType, int lengthSlot, int arraySlot, int indexSlot) {
+
+        builder.iload(lengthSlot);
+        builder.newarray(TypeKind.INT);
+        builder.astore(arraySlot);
+
+        var loopStart = builder.newLabel();
+        var loopEnd = builder.newLabel();
+
+        builder.iconst_0();
+        builder.istore(indexSlot);
+
+        // TODO finish
+    }
+
+    private static void writeClassParser(CodeBuilder builder, RecordComponent component) {
+
     }
 
     /**
@@ -161,9 +255,11 @@ public final class BufferDecoderBuilder {
      * @param components
      * @return a string representing the signature of the method.
      */
-    private static String buildSignature(RecordComponent[] components) {
+    public static String buildSignature(RecordComponent[] components) {
         var builder = new StringBuilder("(");
         for (RecordComponent component : components) {
+            if (component.getType().isArray())
+                builder.append("[");
             builder.append(ClassUtils.getDescriptor(component));
         }
         return builder.append(")V").toString();

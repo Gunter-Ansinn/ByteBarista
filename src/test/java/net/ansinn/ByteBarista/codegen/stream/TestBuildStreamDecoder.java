@@ -9,11 +9,10 @@ import net.ansinn.ByteBarista.annotations.UnsignedInteger;
 import net.ansinn.ByteBarista.annotations.UnsignedShort;
 import net.ansinn.ByteBarista.codegen.CodegenConstants;
 import java.lang.constant.ClassDesc;
-import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.classfile.ClassFile;
 
-public class TestBuildDecoder {
+public class TestBuildStreamDecoder {
 
     @Test
     void testBuildByteRecord() {

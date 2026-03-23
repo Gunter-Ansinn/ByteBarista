@@ -17,6 +17,8 @@ public final class CodegenConstants {
     public static final ClassDesc BUFFER_DESC = ClassDesc.of("java.nio.ByteBuffer");
     public static final ClassDesc HELPER_DESC = ClassDesc.of("net.ansinn.ByteBarista.NumericHelpers");
     public static final ClassDesc INPUT_DESC = ClassDesc.of("java.io.ByteArrayInputStream");
+    public static final ClassDesc OUTPUT_DESC = ClassDesc.of("java.io.ByteArrayOutputStream");
+
 
     public static final MethodTypeDesc BUFFER_LONG_LOAD = MethodTypeDesc.of(ConstantDescs.CD_long, BUFFER_DESC);
     public static final MethodTypeDesc BUFFER_INT_LOAD = MethodTypeDesc.of(ConstantDescs.CD_int, BUFFER_DESC);
@@ -24,5 +26,7 @@ public final class CodegenConstants {
     public static final MethodTypeDesc INT_DESC = MethodTypeDesc.ofDescriptor("()I");
     public static final MethodTypeDesc SHORT_DESC = MethodTypeDesc.ofDescriptor("()S");
     public static final MethodTypeDesc BYTE_DESC = MethodTypeDesc.ofDescriptor("()B");
+
+    public static final MethodTypeDesc WRITE_BYTE = MethodTypeDesc.ofDescriptor("(I)V");
 
 }

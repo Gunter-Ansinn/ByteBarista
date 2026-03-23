@@ -1,5 +1,8 @@
 package net.ansinn.ByteBarista.codegen;
 
+import net.ansinn.ByteBarista.codegen.buffer.BufferDecoderBuilder;
+import net.ansinn.ByteBarista.codegen.buffer.BufferEncoderBuilder;
+
 import java.lang.classfile.ClassFile;
 import java.lang.constant.*;
 import java.lang.invoke.MethodHandle;
@@ -43,7 +46,7 @@ public final class RecordCodecBuilder {
                     });
 
                     builder.withMethod("writeToBuffer", methodType, ClassFile.ACC_STATIC, methodBuilder -> {
-                        methodBuilder.withCode(codeBuilder -> BufferEncoderBuilder.emitWriteFunction(codeBuilder, clazz));
+//                        methodBuilder.withCode(codeBuilder -> BufferEncoderBuilder.emitWriteFunction(codeBuilder, clazz));
                     });
                 }
         );

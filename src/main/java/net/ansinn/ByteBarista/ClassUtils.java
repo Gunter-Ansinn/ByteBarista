@@ -6,6 +6,7 @@ import net.ansinn.ByteBarista.annotations.UnsignedShort;
 
 import java.lang.classfile.ClassFile;
 import java.lang.constant.ClassDesc;
+import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.ConstantBootstraps;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.RecordComponent;
@@ -193,5 +194,9 @@ public class ClassUtils {
                 }
             };
         } else return "L" + type.getName() + ";";
+    }
+
+    public static MethodTypeDesc getField(RecordComponent component) {
+        return MethodTypeDesc.ofDescriptor("()" + getDescriptor(component));
     }
 }

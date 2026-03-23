@@ -13,14 +13,13 @@ import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.nio.ByteBuffer;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 //TODO swap manual inputs wherever possible to encoder implementation.
-public class TestDecoderMethod {
+public class TestStreamDecoderMethod {
 
     private static MethodHandle getTestHandle(Class<? extends Record> recordClazz) throws IllegalAccessException, NoSuchMethodException {
         var lookup = MethodHandles.lookup();
